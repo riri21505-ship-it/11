@@ -38,37 +38,155 @@ scene.add(light);
 
 scene.add(new THREE.AxesHelper(5));
 
+
+
 // ==============================
-// 車輪クラス
+// 円形レールの作成
 // ==============================
-class wheel extends THREE.Object3D {
+
+// レールの寸法
+const centerRadius = 9.5;
+const railWidth = 1.5;
+const innerRadius = centerRadius - railWidth / 2;
+const outerRadius = centerRadius + railWidth / 2;
+
+// レールの太さ
+const railThickness = 0.06;
+
+// レールをまとめるGroup
+const RailGroup = new THREE.Group();
+
+// ==============================
+// レールのマテリアル
+// ==============================
+
+const railMaterial = new THREE.MeshStandardMaterial({
+    color: 0x777777,
+    metalness: 0.7,
+    roughness: 0.4
+});
+
+// ==============================
+// 内側のレール
+// ==============================
+
+const innerRailGeometry = new THREE.TorusGeometry(
+    innerRadius,
+    railThickness,
+    12,
+    100
+);
+
+const innerRail = new THREE.Mesh(
+    innerRailGeometry,
+    railMaterial
+);
+
+innerRail.rotation.x = Math.PI / 2;
+innerRail.position.y = 0.26;
+
+RailGroup.add(innerRail);
+
+// ==============================
+// 外側のレール
+// ==============================
+
+const outerRailGeometry = new THREE.TorusGeometry(
+    outerRadius,
+    railThickness,
+    12,
+    100
+);
+
+const outerRail = new THREE.Mesh(
+    outerRailGeometry,
+    railMaterial
+);
+
+outerRail.rotation.x = Math.PI / 2;
+outerRail.position.y = 0.26;
+
+RailGroup.add(outerRail);
+
+// ==============================
+// 枕木の作成
+// ==============================
+
+// 枕木の形状
+const sleeperGeometry = new THREE.BoxGeometry(
+    0.3,
+    0.2,
+    1.5
+);
+
+// 枕木の材質
+const sleeperMaterial = new THREE.MeshStandardMaterial({
+    color: 0x79502b
+});
+
+// 枕木の原型
+const sleeperTemplate = new THREE.Mesh(
+    sleeperGeometry,
+    sleeperMaterial
+);
+
+// 枕木をまとめるGroup
+const sleepersGroup = new THREE.Group();
+
+// 30本の枕木を配置
+for (let i = 0; i < 30; i++) {
+
+    // 回転の中心となるGroup
+    const pivot = new THREE.Group();
+
+    // 枕木を複製
+    const sleeper = sleeperTemplate.clone();
+
+    // 円の中心から9.5離れた位置に置く
+    sleeper.position.set(0, 0.1, 9.5);
+
+    pivot.add(sleeper);
+
+    // 12度ずつ回転
+    pivot.rotation.y = i * Math.PI * 2 / 30;
+
+    sleepersGroup.add(pivot);
+}
+
+// 枕木をレールのGroupに追加
+RailGroup.add(sleepersGroup);
+
+// シーンに追加
+scene.add(RailGroup);
+
+
+ // ==============================
+ // Wheelクラス
+ // ==============================
+class Wheel extends THREE.Object3D {
     constructor(radius, width, segments, color, x, y, z) {
         super();
 
-        this.geometry = new THREE.CylinderGeometry(
+        const geometry = new THREE.CylinderGeometry(
             radius,
             radius,
             width,
             segments
         );
 
-this.material = new THREE.MeshStandardMaterial({
-    color: color,
-    wireframe: true
-});
+        const material = new THREE.MeshStandardMaterial({
+            color: color,
+            wireframe: true
+        });
 
-        this.mesh = new THREE.Mesh(
-            this.geometry,
-            this.material
-        );
+        const mesh = new THREE.Mesh(geometry, material);
 
-        // 車輪の位置
         this.position.set(x, y, z);
 
         // 車輪を横向きにする
-        this.mesh.rotation.x = Math.PI / 2;
+        mesh.rotation.x = Math.PI / 2;
 
-        this.add(this.mesh);
+        this.add(mesh);
     }
 
     // 車輪の自転
@@ -77,161 +195,146 @@ this.material = new THREE.MeshStandardMaterial({
     }
 }
 
-// ==============================
-// 回転の中心となる親グループ
-// ==============================
-const pivot = new THREE.Group();
-scene.add(pivot);
 
 // ==============================
-// Toy Train本体
+// ToyTrainクラス
 // ==============================
-const train = new THREE.Group();
+class ToyTrain extends THREE.Group {
+    constructor() {
+        super();
 
-// 車体
-const bodyGeometry = new THREE.BoxGeometry(3, 0.8, 1.2);
-const bodyMaterial = new THREE.MeshPhongMaterial({
-    color: 0x159447
-});
-const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-body.position.set(0, 1, 0);
-train.add(body);
+        // 車体
+        const bodyGeometry = new THREE.BoxGeometry(3, 0.8, 1.2);
+        const bodyMaterial = new THREE.MeshPhongMaterial({
+            color: 0x159447
+        });
 
-// 運転席
-const cabinGeometry = new THREE.BoxGeometry(1.2, 1.2, 1.1);
-const cabinMaterial = new THREE.MeshPhongMaterial({
-    color: 0x2030cc
-});
-const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
-cabin.position.set(-0.65, 2, 0);
-train.add(cabin);
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        body.position.set(0, 1, 0);
+        this.add(body);
 
-// 煙突
-const chimneyGeometry = new THREE.CylinderGeometry(
-    0.18, 0.25, 0.7, 32
-);
-const chimneyMaterial = new THREE.MeshPhongMaterial({
-    color: 0x493333
-});
-const chimney = new THREE.Mesh(chimneyGeometry, chimneyMaterial);
-chimney.position.set(0.9, 1.75, 0);
-train.add(chimney);
+        // 運転席
+        const cabinGeometry = new THREE.BoxGeometry(1.2, 1.2, 1.1);
+        const cabinMaterial = new THREE.MeshPhongMaterial({
+            color: 0x2030cc
+        });
+
+        const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
+        cabin.position.set(-0.65, 2, 0);
+        this.add(cabin);
+
+        // 煙突
+        const chimneyGeometry = new THREE.CylinderGeometry(
+            0.18, 0.25, 0.7, 32
+        );
+
+        const chimneyMaterial = new THREE.MeshPhongMaterial({
+            color: 0x493333
+        });
+
+        const chimney = new THREE.Mesh(
+            chimneyGeometry,
+            chimneyMaterial
+        );
+
+        chimney.position.set(0.9, 1.75, 0);
+        this.add(chimney);
+
+        // 大車輪2つ
+        this.wheelBig1 = new Wheel(
+            0.48, 0.18, 32, 0xff0000,
+            1.0, 0.48, 0.68
+        );
+
+        this.wheelBig2 = new Wheel(
+            0.48, 0.18, 32, 0xff0000,
+            1.0, 0.48, -0.68
+        );
+
+        this.add(this.wheelBig1);
+        this.add(this.wheelBig2);
+
+        // 小車輪4つ
+        this.wheelSmall1 = new Wheel(
+            0.22, 0.14, 32, 0xff0000,
+            -1.2, 0.35, 0.68
+        );
+
+        this.wheelSmall2 = new Wheel(
+            0.22, 0.14, 32, 0xff0000,
+            -1.2, 0.35, -0.68
+        );
+
+        this.wheelSmall3 = new Wheel(
+            0.22, 0.14, 32, 0xff0000,
+            -0.5, 0.35, 0.68
+        );
+
+        this.wheelSmall4 = new Wheel(
+            0.22, 0.14, 32, 0xff0000,
+            -0.5, 0.35, -0.68
+        );
+
+        this.add(this.wheelSmall1);
+        this.add(this.wheelSmall2);
+        this.add(this.wheelSmall3);
+        this.add(this.wheelSmall4);
+    }
+
+    // 6つの車輪を回転させる
+    rotateWheels(speed) {
+        this.wheelBig1.rotateWheel(speed);
+        this.wheelBig2.rotateWheel(speed);
+
+        this.wheelSmall1.rotateWheel(speed);
+        this.wheelSmall2.rotateWheel(speed);
+        this.wheelSmall3.rotateWheel(speed);
+        this.wheelSmall4.rotateWheel(speed);
+    }
+}
+
 
 // ==============================
-// 元の大車輪のコード
-// wheelクラスに置き換えたためコメントアウト
+// ToyTrainを1台インスタンス化
 // ==============================
-
-/*
-const wheelBigGeometry = new THREE.CylinderGeometry(
-    0.48, 0.48, 0.18, 32
-);
-const wheelBigMaterial = new THREE.MeshPhongMaterial({
-    color: 0xff0000
-});
-const wheelBigMesh = new THREE.Mesh(
-    wheelBigGeometry,
-    wheelBigMaterial
-);
-*/
+const toytrain = new ToyTrain();
 
 // ==============================
-// 大車輪2つ：煙突側
-// ==============================
-const wheelBig1 = new wheel(
-    0.48, 0.18, 32, 0xff0000,
-    1.0, 0.48, 0.68
-);
-
-const wheelBig2 = new wheel(
-    0.48, 0.18, 32, 0xff0000,
-    1.0, 0.48, -0.68
-);
-
-train.add(wheelBig1);
-train.add(wheelBig2);
-
-// ==============================
-// 小車輪4つ：後方
-// ==============================
-const wheelSmall1 = new wheel(
-    0.22, 0.14, 32, 0xff0000,
-    -1.2, 0.35, 0.68
-);
-
-const wheelSmall2 = new wheel(
-    0.22, 0.14, 32, 0xff0000,
-    -1.2, 0.35, -0.68
-);
-
-const wheelSmall3 = new wheel(
-    0.22, 0.14, 32, 0xff0000,
-    -0.5, 0.35, 0.68
-);
-
-const wheelSmall4 = new wheel(
-    0.22, 0.14, 32, 0xff0000,
-    -0.5, 0.35, -0.68
-);
-
-train.add(wheelSmall1);
-train.add(wheelSmall2);
-train.add(wheelSmall3);
-train.add(wheelSmall4);
-// ==============================
-// グループの中心を原点に移動させる
-// ==============================
-
-// グループ全体の大きさと中心点を計算
-const box = new THREE.Box3().setFromObject(train);
-
-const center = new THREE.Vector3();
-box.getCenter(center);
-
-// 子オブジェクトを中心が原点になるように移動
-train.children.forEach((child) => {
-    child.position.sub(center);
-});
-// ==============================
-// 前部分を回転の中心にする
+// 公転グループ
 // ==============================
 
-// 煙突側のX座標は約1.5
-// 回転中心を原点に合わせるため、本体を後方へずらす
-scene.add(train);
-pivot.add(train);
+const orbitGroup = new THREE.Group();
 
+// ToyTrainを公転グループに入れる
+orbitGroup.add(toytrain);
+
+// 円の中心から10だけ離す
+toytrain.position.set(9.5, 0, 0);
+
+// ★ 列車の向きを進行方向に合わせる
+toytrain.rotation.y = Math.PI / 2;
+
+// シーンに追加
+scene.add(orbitGroup);
 // ==============================
 // アニメーション
 // ==============================
+
 function animate() {
     requestAnimationFrame(animate);
 
-    // 車輪を自転
-// 車輪を自転
-wheelBig1.rotateWheel(0.05);
-wheelBig2.rotateWheel(0.02);
+    // 公転
+    orbitGroup.rotation.y += 0.01;
 
-wheelSmall1.rotateWheel(0.02);
-wheelSmall2.rotateWheel(0.02);
-wheelSmall3.rotateWheel(0.02);
-wheelSmall4.rotateWheel(0.02);
-    wheelBig2.rotateWheel(0.02);
-
-    wheelSmall1.rotateWheel(0.02);
-    wheelSmall2.rotateWheel(0.02);
-    wheelSmall3.rotateWheel(0.02);
-    wheelSmall4.rotateWheel(0.02);
-
-    // 煙突側の前部分を中心に水平回転
-// Toy Train全体を自転
-train.rotation.y += 0.01;
+    // 車輪の自転
+    toytrain.rotateWheels(0.1);
 
     controls.update();
     renderer.render(scene, camera);
 }
 
 animate();
+
 
 // ==============================
 // ウィンドウサイズ変更
